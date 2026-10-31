@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1633" />
+  <meta name="description" content="Cubic Kingdoms — a cozy voxel sandbox in the sky. Mine, build, parkour, and rule your own floating castle." />
+  <title>Cubic Kingdoms — Build in the Clouds</title>
+  <link rel="preload" href="assets/fonts/baloo2.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="assets/fonts/nunito.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%237ac653' d='M32 4 60 20 32 36 4 20z'/%3E%3Cpath fill='%238a5f3c' d='M4 20 32 36 32 60 4 44z'/%3E%3Cpath fill='%236b4a2f' d='M60 20 32 36 32 60 60 44z'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Cubic Kingdoms game world"></canvas>
+
+    <div id="ui" class="ui-hidden">
+      <div class="hud-top-left">
+        <div class="player-card panel">
+          <div class="avatar-ring">
+            <canvas id="avatar" width="112" height="112"></canvas>
+            <span id="level-badge">1</span>
+          </div>
+          <div class="player-meta">
+            <div class="player-line">
+              <span class="player-name">Builder</span>
+              <span class="realm-tag">Sunnyhollow</span>
+            </div>
+            <div class="xp-bar"><span id="xp-fill"></span></div>
+            <div class="xp-text"><span id="xp-label">0 / 120 XP</span></div>
+          </div>
+          <button id="btn-wardrobe" class="tiny-btn" aria-label="Wardrobe" title="Wardrobe (C)">♛</button>
+        </div>
+
+        <div class="quest-tracker panel" id="quest-tracker">
+          <div class="tracker-head"><span>QUESTS</span><span class="tracker-dots">•••</span></div>
+          <div id="quest-list"></div>
+        </div>
+      </div>
+
+      <div class="top-center">
+        <div class="realm-banner"><span class="cloud-dot">☁</span> Sunnyhollow <span class="realm-sub">Realm</span></div>
+        <div id="objective" class="objective">Explore the realm and talk to the villagers</div>
+      </div>
+
+      <div class="hud-top-right">
+        <div class="coins panel" id="coins-pill" role="button" tabindex="0" title="Open the block shop (B)">
+          <span class="coin-icon"></span>
+          <span id="coin-count">40</span>
+        </div>
+        <div class="mini-wrap panel">
+          <canvas id="minimap" width="180" height="180"></canvas>
+          <span class="compass-n">N</span>
+        </div>
+        <div class="icon-row">
+          <button id="btn-sound" class="icon-btn" aria-label="Toggle sound" title="Sound (M)">♪</button>
+          <button id="btn-inventory" class="icon-btn" aria-label="Open inventory" title="Inventory (I)">▦</button>
+          <button id="btn-shop" class="icon-btn" aria-label="Open shop" title="Shop (B)">◈</button>
+          <button id="btn-help" class="icon-btn" aria-label="How to play" title="How to play (H)">?</button>
+          <button id="btn-pause" class="icon-btn" aria-label="Pause menu" title="Menu (Esc)">☰</button>
+        </div>
+      </div>
+
+      <div id="crosshair">
+        <span class="ch-dot"></span>
+        <span class="ch-ring"></span>
+      </div>
+      <div id="target-label" class="target-label"></div>
+      <div id="break-meter" class="break-meter"><span></span></div>
+
+      <div id="interact-prompt" class="interact-prompt hidden"></div>
+      <div id="toast-stack" class="toast-stack"></div>
+      <div id="chat-log" class="chat-log"></div>
+      <div id="npc-labels" class="npc-labels"></div>
+
+      <div class="hotbar-wrap">
+        <div id="hotbar" class="hotbar"></div>
+        <div class="hotbar-hint"><span>1–9</span> select <span class="dot">·</span> scroll to cycle <span class="dot">·</span> <span>I</span> inventory</div>
+      </div>
+
+      <div id="mobile-controls" class="mobile-controls">
+        <div id="joystick" class="joystick"><div class="joystick-ring"></div><div id="stick" class="stick"></div></div>
+        <div class="action-cluster">
+          <button id="btn-interact" class="action-btn interact-btn" aria-label="Interact">✦<small>talk</small></button>
+          <button id="btn-place" class="action-btn place-btn" aria-label="Place block">▣<small>place</small></button>
+          <button id="btn-mine" class="action-btn mine-btn" aria-label="Mine block">⛏<small>mine</small></button>
+          <button id="btn-jump" class="action-btn jump-btn" aria-label="Jump">▲<small>jump</small></button>
+          <button id="btn-emote" class="action-btn emote-btn" aria-label="Emote">☺<small>dance</small></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- START SCREEN -->
+    <section id="start-screen" class="start-screen">
+      <div class="start-bg-orb orb-a"></div>
+      <div class="start-bg-orb orb-b"></div>
+      <div class="float-cube cube-a"></div>
+      <div class="float-cube cube-b"></div>
+      <div class="float-cube cube-c"></div>
+      <div class="float-cube cube-d"></div>
+      <div class="start-inner">
+        <div class="logo-lockup">
+          <div class="logo-kicker">A COZY VOXEL ADVENTURE</div>
+          <h1 class="logo"><span>CUBIC</span><span class="logo-accent">KINGDOMS</span></h1>
+          <p class="tagline">Build a castle in the clouds. Mine, parkour, and make the sky yours.</p>
+        </div>
+        <div class="start-actions">
+          <button id="btn-play" class="play-btn">Play</button>
+          <button id="btn-how" class="ghost-btn">How to play</button>
+        </div>
+        <div class="feature-chips">
+          <span>⛏ Mine &amp; build</span>
+          <span>🏰 Castle parkour</span>
+          <span>✦ Village quests</span>
+          <span>☁ Floating realm</span>
+        </div>
+        <div class="start-controls panel">
+          <div class="sc-title">FIELD GUIDE</div>
+          <div class="sc-grid">
+            <div><kbd>WASD</kbd><span>Move</span></div>
+            <div><kbd>Mouse</kbd><span>Look around</span></div>
+            <div><kbd>LMB</kbd><span>Mine blocks</span></div>
+            <div><kbd>RMB</kbd><span>Place blocks</span></div>
+            <div><kbd>Space</kbd><span>Jump / swim</span></div>
+            <div><kbd>E</kbd><span>Talk to villagers</span></div>
+            <div><kbd>1–9</kbd><span>Choose a block</span></div>
+            <div><kbd>I</kbd><span>Inventory</span></div>
+          </div>
+          <div class="sc-tip">Tip: hold left-click to mine. Click the world to capture your mouse. Touch devices get a joystick automatically.</div>
+        </div>
+        <div class="start-foot">Inspired by the classic cubic sandbox MMOs we grew up with. Built with Three.js.</div>
+      </div>
+    </section>
+
+    <!-- DIALOGUE -->
+    <div id="dialogue" class="modal hidden">
+      <div class="sheet dialogue-sheet">
+        <button class="close-btn" data-close="dialogue" aria-label="Close">×</button>
+        <div class="dialogue-head">
+          <div class="portrait"><canvas id="dialogue-avatar" width="128" height="128"></canvas></div>
+          <div>
+            <h2 id="dialogue-name">Villager</h2>
+            <div id="dialogue-role" class="dialogue-role">Friend of the realm</div>
+          </div>
+        </div>
+        <p id="dialogue-text" class="dialogue-text"></p>
+        <div id="dialogue-progress" class="dialogue-progress hidden"></div>
+        <div id="dialogue-reward" class="dialogue-reward"></div>
+        <div id="dialogue-actions" class="sheet-actions"></div>
+      </div>
+    </div>
+
+    <!-- INVENTORY -->
+    <div id="inventory" class="modal hidden">
+      <div class="sheet wide-sheet">
+        <button class="close-btn" data-close="inventory" aria-label="Close">×</button>
+        <div class="sheet-head">
+          <div>
+            <div class="sheet-kicker">YOUR SATCHEL</div>
+            <h2>Block Inventory</h2>
+          </div>
+          <div class="sheet-head-actions">
+            <button class="mini-action" id="inv-shop-btn">◈ Shop</button>
+            <div class="slot-chip">Slot <span id="inv-slot-num">1</span></div>
+          </div>
+        </div>
+        <p class="sheet-sub">Tap a block to place it in your selected hotbar slot. Mine blocks in the world to collect more.</p>
+        <div id="inventory-grid" class="inventory-grid"></div>
+        <div class="sheet-foot">All blocks are placeable. Rare blocks can also be bought from the shop.</div>
+      </div>
+    </div>
+
+    <!-- SHOP -->
+    <div id="shop" class="modal hidden">
+      <div class="sheet wide-sheet">
+        <button class="close-btn" data-close="shop" aria-label="Close">×</button>
+        <div class="sheet-head">
+          <div>
+            <div class="sheet-kicker">PIP'S BLOCK EXCHANGE</div>
+            <h2>Buy Blocks</h2>
+          </div>
+          <div class="shop-balance"><span class="coin-icon"></span><span id="shop-coins">40</span></div>
+        </div>
+        <p class="sheet-sub">Spend coins earned from quests and mining. Every purchase is delivered straight to your satchel.</p>
+        <div id="shop-grid" class="shop-grid"></div>
+      </div>
+    </div>
+
+    <!-- WARDROBE -->
+    <div id="wardrobe" class="modal hidden">
+      <div class="sheet">
+        <button class="close-btn" data-close="wardrobe" aria-label="Close">×</button>
+        <div class="sheet-head">
+          <div>
+            <div class="sheet-kicker">DRESS FOR THE CLOUDS</div>
+            <h2>Wardrobe</h2>
+          </div>
+        </div>
+        <p class="sheet-sub">Hats are earned by helping the villagers. Shirt and hair colours are always free.</p>
+        <div class="wardrobe-section">
+          <h3>Hats</h3>
+          <div id="hat-grid" class="hat-grid"></div>
+        </div>
+        <div class="wardrobe-section">
+          <h3>Shirt</h3>
+          <div id="shirt-swatches" class="swatches"></div>
+        </div>
+        <div class="wardrobe-section">
+          <h3>Hair</h3>
+          <div id="hair-swatches" class="swatches"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAUSE -->
+    <div id="pause" class="modal hidden">
+      <div class="sheet menu-sheet">
+        <div class="sheet-kicker">TAKE A BREATH</div>
+        <h2>Paused</h2>
+        <p class="sheet-sub">Sunnyhollow will keep floating without you.</p>
+        <div class="menu-actions">
+          <button id="btn-resume" class="primary-btn">Resume</button>
+          <button id="btn-pause-help" class="ghost-btn">How to play</button>
+          <button id="btn-save" class="ghost-btn">Save realm</button>
+          <button id="btn-quality" class="ghost-btn">Graphics: High</button>
+          <button id="btn-reset" class="danger-btn">Reset realm</button>
+        </div>
+        <div class="menu-foot">Progress saves automatically to this browser.</div>
+      </div>
+    </div>
+
+    <!-- HELP -->
+    <div id="help" class="modal hidden">
+      <div class="sheet wide-sheet">
+        <button class="close-btn" data-close="help" aria-label="Close">×</button>
+        <div class="sheet-head">
+          <div>
+            <div class="sheet-kicker">SURVIVAL IN THE SKY</div>
+            <h2>How to Play</h2>
+          </div>
+        </div>
+        <div class="help-grid">
+          <div class="help-card">
+            <h3>⛏ Mine &amp; Build</h3>
+            <p>Hold <b>left-click</b> to break a block and collect it. <b>Right-click</b> places the selected hotbar block. Aim with the crosshair. You can build anywhere you can reach.</p>
+          </div>
+          <div class="help-card">
+            <h3>☁ Get Around</h3>
+            <p><b>WASD</b> to move, <b>Space</b> to jump, <b>Shift</b> to sprint. You can climb one-block steps automatically. Leap the floating stones east of the island to find the sky beacon.</p>
+          </div>
+          <div class="help-card">
+            <h3>✦ Help the Villagers</h3>
+            <p>Walk up to a villager and press <b>E</b>. Accept their quest, gather what they need, then return to claim coins, XP, and rare blocks. Hats unlock as rewards.</p>
+          </div>
+          <div class="help-card">
+            <h3>◈ Spend &amp; Style</h3>
+            <p>Open the <b>shop</b> with B to buy blocks with coins. Open the <b>wardrobe</b> with C to change your shirt, hair, and unlocked hats. Press <b>I</b> for your full inventory.</p>
+          </div>
+          <div class="help-card">
+            <h3>♛ Build a Kingdom</h3>
+            <p>Your edits persist in this browser. Try a tower on the east shore, a bridge between platforms, or a cozy hut by the pond. There is no wrong block.</p>
+          </div>
+          <div class="help-card">
+            <h3>📱 Touch Controls</h3>
+            <p>On a phone or tablet, use the left joystick to move, drag the world to look, and tap the action buttons to jump, mine, place, and talk.</p>
+          </div>
+        </div>
+        <div class="help-foot">
+          <div><kbd>I</kbd> Inventory <kbd>B</kbd> Shop <kbd>C</kbd> Wardrobe <kbd>M</kbd> Sound <kbd>G</kbd> Dance <kbd>Esc</kbd> Pause</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading" class="loading">
+      <div class="loading-cube"></div>
+      <div class="loading-text">Raising the island…</div>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
